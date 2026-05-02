@@ -34,6 +34,8 @@ http://127.0.0.1:5173/?room=lobby&name=Alice
 http://127.0.0.1:5173/?room=lobby&name=Bob
 ```
 
+The client auto-selects English or Simplified Chinese from the browser language. For QA, append `&lang=en` or `&lang=zh-CN`.
+
 In local Vite development, the client automatically connects signaling to:
 
 ```text

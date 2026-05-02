@@ -16,6 +16,7 @@ import type { ChatMessage, PeerInfo, RtcGameMessage, ServerSignalMessage } from 
 import { sanitizeName, sanitizeRoom } from "./game/protocol";
 import { renderGame } from "./game/render";
 import type { Arena, Bullet, Direction, InputState, Player, VisualEffect } from "./game/types";
+import { createI18n, type Locale, type Translate } from "./i18n";
 import { formatChatTime, SignalingRoom } from "./net/signaling";
 import { RtcMesh } from "./net/webrtc";
 
@@ -71,6 +72,15 @@ function clampTouchPosition(id: TouchControlId, position: TouchControlPosition):
   };
 }
 
+function localizedMessage(t: Translate, message: string): string {
+  return message.includes(".") ? t(message) : message;
+}
+
+function localizedPeerName(t: Translate, name: string): string {
+  const suffix = " (connecting)";
+  return name.endsWith(suffix) ? t("players.connecting", { name: name.slice(0, -suffix.length) }) : name;
+}
+
 function initialRoom(): string {
   const room = new URLSearchParams(window.location.search).get("room") || localStorage.getItem("tank-room") || "lobby";
   return sanitizeRoom(room);
@@ -88,9 +98,15 @@ function respawn(player: Player, arena: Arena): Player {
 }
 
 export default function App() {
+  const i18n = useMemo(() => createI18n(), []);
   const [name, setName] = useState(initialName);
   const [room, setRoom] = useState(initialRoom);
   const [joined, setJoined] = useState(Boolean(initialName()));
+
+  useEffect(() => {
+    document.documentElement.lang = i18n.locale;
+    document.title = i18n.t("app.title");
+  }, [i18n]);
 
   function joinGame() {
     const safeName = sanitizeName(name);
@@ -103,19 +119,21 @@ export default function App() {
   }
 
   if (!joined) {
-    return <JoinScreen name={name} room={room} onName={setName} onRoom={setRoom} onJoin={joinGame} />;
+    return <JoinScreen t={i18n.t} name={name} room={room} onName={setName} onRoom={setRoom} onJoin={joinGame} />;
   }
 
-  return <TankRoomView name={name} room={room} onLeave={() => setJoined(false)} />;
+  return <TankRoomView t={i18n.t} locale={i18n.locale} name={name} room={room} onLeave={() => setJoined(false)} />;
 }
 
 function JoinScreen({
+  t,
   name,
   room,
   onName,
   onRoom,
   onJoin,
 }: {
+  t: Translate;
   name: string;
   room: string;
   onName: (value: string) => void;
@@ -124,12 +142,12 @@ function JoinScreen({
 }) {
   return (
     <main className="join-shell">
-      <section className="join-panel" aria-label="Join room">
+      <section className="join-panel" aria-label={t("join.aria")}>
         <div className="brand-lockup">
           <img src="/assets/tank-app-icon.png" alt="" aria-hidden="true" />
           <div>
-            <p className="eyebrow">Super Tank / Battle City</p>
-            <h1>坦克大战</h1>
+            <p className="eyebrow">{t("brand.eyebrow")}</p>
+            <h1>{t("app.title")}</h1>
           </div>
         </div>
         <form
@@ -139,14 +157,14 @@ function JoinScreen({
           }}
         >
           <label>
-            Gamer name
-            <input autoFocus value={name} maxLength={24} onChange={(event) => onName(event.target.value)} placeholder="Commander" />
+            {t("join.nameLabel")}
+            <input autoFocus value={name} maxLength={24} onChange={(event) => onName(event.target.value)} placeholder={t("join.namePlaceholder")} />
           </label>
           <label>
-            Room
-            <input value={room} maxLength={32} onChange={(event) => onRoom(event.target.value)} placeholder="lobby" />
+            {t("join.roomLabel")}
+            <input value={room} maxLength={32} onChange={(event) => onRoom(event.target.value)} placeholder={t("join.roomPlaceholder")} />
           </label>
-          <button type="submit">Join Battle</button>
+          <button type="submit">{t("join.submit")}</button>
         </form>
       </section>
       <div className="join-preview" aria-hidden="true">
@@ -159,7 +177,7 @@ function JoinScreen({
   );
 }
 
-function TankRoomView({ room, name, onLeave }: { room: string; name: string; onLeave: () => void }) {
+function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale: Locale; room: string; name: string; onLeave: () => void }) {
   const arena = useMemo(() => createArena(room), [room]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const inputRef = useRef<InputState>({ ...EMPTY_INPUT });
@@ -179,7 +197,7 @@ function TankRoomView({ room, name, onLeave }: { room: string; name: string; onL
   const [peers, setPeers] = useState<PeerInfo[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatText, setChatText] = useState("");
-  const [status, setStatus] = useState("Connecting");
+  const [status, setStatus] = useState("status.connecting");
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(false);
   const [, setUiVersion] = useState(0);
@@ -345,7 +363,7 @@ function TankRoomView({ room, name, onLeave }: { room: string; name: string; onL
         );
         meshRef.current = mesh;
         mesh.connectToExisting(message.peers);
-        setStatus("In room");
+        setStatus("status.inRoom");
         return;
       }
 
@@ -364,7 +382,7 @@ function TankRoomView({ room, name, onLeave }: { room: string; name: string; onL
       }
 
       if (message.type === "signal") {
-        void meshRef.current?.receiveSignal(message.from, message.signal).catch(() => setError("A peer connection failed."));
+        void meshRef.current?.receiveSignal(message.from, message.signal).catch(() => setError("status.peerFailed"));
         return;
       }
 
@@ -569,21 +587,22 @@ function TankRoomView({ room, name, onLeave }: { room: string; name: string; onL
   };
 
   const playerRows = [localPlayerRef.current, ...[...remotePlayersRef.current.values()]].filter(Boolean) as Player[];
+  const roomStatus = error ? localizedMessage(t, error) : localizedMessage(t, status);
 
   return (
     <main className="game-shell">
       <header className="topbar">
         <div>
-          <h1>坦克大战</h1>
+          <h1>{t("app.title")}</h1>
           <span>{room}</span>
         </div>
         <div className="top-actions">
-          <span className="status-pill">{error || status}</span>
+          <span className="status-pill">{roomStatus}</span>
           <button
             className="icon-button"
             type="button"
-            aria-label={muted ? "Unmute audio" : "Mute audio"}
-            title={muted ? "Unmute audio" : "Mute audio"}
+            aria-label={muted ? t("audio.unmute") : t("audio.mute")}
+            title={muted ? t("audio.unmute") : t("audio.mute")}
             onClick={() => {
               const nextMuted = !muted;
               setMuted(nextMuted);
@@ -594,7 +613,7 @@ function TankRoomView({ room, name, onLeave }: { room: string; name: string; onL
               }
             }}
           >
-            {muted ? "Audio" : "Mute"}
+            {muted ? t("audio.on") : t("audio.muted")}
           </button>
           <button
             onClick={() => {
@@ -602,24 +621,24 @@ function TankRoomView({ room, name, onLeave }: { room: string; name: string; onL
               onLeave();
             }}
           >
-            Leave
+            {t("nav.leave")}
           </button>
         </div>
       </header>
       <section className="play-area">
         <div className="stage">
-          <canvas ref={canvasRef} aria-label="Tank battle arena" />
-          {!selfId && <div className="connection-overlay">Connecting to room...</div>}
-          <TouchControls setControl={setControl} />
+          <canvas ref={canvasRef} aria-label={t("canvas.aria")} />
+          {!selfId && <div className="connection-overlay">{t("status.connectingRoom")}</div>}
+          <TouchControls t={t} setControl={setControl} />
         </div>
         <aside className="sidebar">
           <section className="panel">
-            <h2>Players</h2>
+            <h2>{t("players.title")}</h2>
             <ul className="players">
               {playerRows.map((player) => (
                 <li key={player.id}>
                   <span className="swatch" style={{ background: player.color }} />
-                  <span>{player.id === selfId ? `${player.name} (you)` : player.name}</span>
+                  <span>{player.id === selfId ? t("players.you", { name: player.name }) : player.name}</span>
                   <strong>{player.score}</strong>
                 </li>
               ))}
@@ -627,7 +646,7 @@ function TankRoomView({ room, name, onLeave }: { room: string; name: string; onL
                 remotePlayersRef.current.has(peer.id) ? null : (
                   <li key={peer.id}>
                     <span className="swatch pending" />
-                    <span>{peer.name}</span>
+                    <span>{localizedPeerName(t, peer.name)}</span>
                     <strong>...</strong>
                   </li>
                 ),
@@ -635,19 +654,19 @@ function TankRoomView({ room, name, onLeave }: { room: string; name: string; onL
             </ul>
           </section>
           <section className="panel chat-panel">
-            <h2>Chat</h2>
+            <h2>{t("chat.title")}</h2>
             <div className="messages">
               {messages.map((message, index) => (
                 <p key={`${message.at}:${index}`}>
-                  <time>{formatChatTime(message)}</time>
+                  <time>{formatChatTime(message, locale)}</time>
                   <b>{message.name}</b>
                   <span>{message.text}</span>
                 </p>
               ))}
             </div>
             <form onSubmit={sendChat}>
-              <input value={chatText} maxLength={280} onChange={(event) => setChatText(event.target.value)} placeholder="Message" />
-              <button type="submit">Send</button>
+              <input value={chatText} maxLength={280} onChange={(event) => setChatText(event.target.value)} placeholder={t("chat.placeholder")} />
+              <button type="submit">{t("chat.send")}</button>
             </form>
           </section>
         </aside>
@@ -656,7 +675,7 @@ function TankRoomView({ room, name, onLeave }: { room: string; name: string; onL
   );
 }
 
-function TouchControls({ setControl }: { setControl: (key: keyof InputState, active: boolean) => void }) {
+function TouchControls({ t, setControl }: { t: Translate; setControl: (key: keyof InputState, active: boolean) => void }) {
   const [positions, setPositions] = useState<TouchControlPositions>(loadTouchControlPositions);
   const dragRef = useRef<{ id: TouchControlId; pointerId: number } | null>(null);
 
@@ -708,27 +727,27 @@ function TouchControls({ setControl }: { setControl: (key: keyof InputState, act
   });
 
   return (
-    <div className="touch-controls" aria-label="Touch controls">
+    <div className="touch-controls" aria-label={t("controls.group")}>
       <div className="floating-control move-control" style={{ left: `${positions.move.x}%`, top: `${positions.move.y}%` }}>
-        <div className="float-grip" {...bindDrag("move")} aria-label="Move movement controls" role="button" tabIndex={0} />
+        <div className="float-grip" {...bindDrag("move")} aria-label={t("controls.moveHandle")} role="button" tabIndex={0} />
         <div className="dpad">
-          <button {...bind("up")} aria-label="Move up">
+          <button {...bind("up")} aria-label={t("controls.moveUp")}>
             ↑
           </button>
-          <button {...bind("left")} aria-label="Move left">
+          <button {...bind("left")} aria-label={t("controls.moveLeft")}>
             ←
           </button>
-          <button {...bind("down")} aria-label="Move down">
+          <button {...bind("down")} aria-label={t("controls.moveDown")}>
             ↓
           </button>
-          <button {...bind("right")} aria-label="Move right">
+          <button {...bind("right")} aria-label={t("controls.moveRight")}>
             →
           </button>
         </div>
       </div>
       <div className="floating-control fire-control" style={{ left: `${positions.fire.x}%`, top: `${positions.fire.y}%` }}>
-        <div className="float-grip" {...bindDrag("fire")} aria-label="Move fire control" role="button" tabIndex={0} />
-        <button className="fire" {...bind("shoot")} aria-label="Fire">
+        <div className="float-grip" {...bindDrag("fire")} aria-label={t("controls.fireHandle")} role="button" tabIndex={0} />
+        <button className="fire" {...bind("shoot")} aria-label={t("controls.fire")}>
           ●
         </button>
       </div>

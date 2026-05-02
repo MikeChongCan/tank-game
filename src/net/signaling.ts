@@ -50,7 +50,7 @@ export class SignalingRoom {
       try {
         this.handler(JSON.parse(String(event.data)) as ServerSignalMessage);
       } catch {
-        this.handler({ type: "error", message: "Received an invalid room message." });
+        this.handler({ type: "error", message: "status.invalidRoomMessage" });
       }
     });
 
@@ -61,7 +61,7 @@ export class SignalingRoom {
     });
 
     socket.addEventListener("error", () => {
-      this.handler({ type: "error", message: "Room signaling is unavailable. Start the Worker locally or deploy it." });
+      this.handler({ type: "error", message: "status.signalingUnavailable" });
     });
   }
 
@@ -96,6 +96,6 @@ export class SignalingRoom {
   }
 }
 
-export function formatChatTime(message: ChatMessage): string {
-  return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(message.at);
+export function formatChatTime(message: ChatMessage, locale?: string): string {
+  return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(message.at);
 }

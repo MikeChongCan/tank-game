@@ -1,0 +1,105 @@
+msgid ""
+msgstr ""
+"Language: zh-CN\n"
+
+msgid "app.title"
+msgstr "坦克大战"
+
+msgid "brand.eyebrow"
+msgstr "超级坦克 / 街机对战"
+
+msgid "join.aria"
+msgstr "加入房间"
+
+msgid "join.nameLabel"
+msgstr "玩家名称"
+
+msgid "join.namePlaceholder"
+msgstr "指挥官"
+
+msgid "join.roomLabel"
+msgstr "房间"
+
+msgid "join.roomPlaceholder"
+msgstr "lobby"
+
+msgid "join.submit"
+msgstr "加入战斗"
+
+msgid "status.connecting"
+msgstr "正在连接"
+
+msgid "status.inRoom"
+msgstr "已进入房间"
+
+msgid "status.peerFailed"
+msgstr "玩家连接失败。"
+
+msgid "status.connectingRoom"
+msgstr "正在连接房间..."
+
+msgid "audio.unmute"
+msgstr "开启音效"
+
+msgid "audio.mute"
+msgstr "静音"
+
+msgid "audio.on"
+msgstr "音效"
+
+msgid "audio.muted"
+msgstr "静音"
+
+msgid "nav.leave"
+msgstr "离开"
+
+msgid "players.title"
+msgstr "玩家"
+
+msgid "players.you"
+msgstr "{name}（你）"
+
+msgid "players.connecting"
+msgstr "{name}（连接中）"
+
+msgid "chat.title"
+msgstr "聊天"
+
+msgid "status.invalidRoomMessage"
+msgstr "收到无效的房间消息。"
+
+msgid "status.signalingUnavailable"
+msgstr "房间信令不可用。请启动本地 Worker 或部署后再试。"
+
+msgid "chat.placeholder"
+msgstr "消息"
+
+msgid "chat.send"
+msgstr "发送"
+
+msgid "controls.group"
+msgstr "触控操作"
+
+msgid "controls.moveHandle"
+msgstr "移动方向控制"
+
+msgid "controls.fireHandle"
+msgstr "移动开火控制"
+
+msgid "controls.moveUp"
+msgstr "向上移动"
+
+msgid "controls.moveLeft"
+msgstr "向左移动"
+
+msgid "controls.moveDown"
+msgstr "向下移动"
+
+msgid "controls.moveRight"
+msgstr "向右移动"
+
+msgid "controls.fire"
+msgstr "开火"
+
+msgid "canvas.aria"
+msgstr "坦克对战战场"

@@ -1,0 +1,105 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+
+msgid "app.title"
+msgstr "Tank Battle"
+
+msgid "brand.eyebrow"
+msgstr "Super Tank / Battle City"
+
+msgid "join.aria"
+msgstr "Join room"
+
+msgid "join.nameLabel"
+msgstr "Gamer name"
+
+msgid "join.namePlaceholder"
+msgstr "Commander"
+
+msgid "join.roomLabel"
+msgstr "Room"
+
+msgid "join.roomPlaceholder"
+msgstr "lobby"
+
+msgid "join.submit"
+msgstr "Join Battle"
+
+msgid "status.connecting"
+msgstr "Connecting"
+
+msgid "status.inRoom"
+msgstr "In room"
+
+msgid "status.peerFailed"
+msgstr "A peer connection failed."
+
+msgid "status.connectingRoom"
+msgstr "Connecting to room..."
+
+msgid "audio.unmute"
+msgstr "Unmute audio"
+
+msgid "audio.mute"
+msgstr "Mute audio"
+
+msgid "audio.on"
+msgstr "Audio"
+
+msgid "audio.muted"
+msgstr "Mute"
+
+msgid "nav.leave"
+msgstr "Leave"
+
+msgid "players.title"
+msgstr "Players"
+
+msgid "players.you"
+msgstr "{name} (you)"
+
+msgid "players.connecting"
+msgstr "{name} (connecting)"
+
+msgid "chat.title"
+msgstr "Chat"
+
+msgid "status.invalidRoomMessage"
+msgstr "Received an invalid room message."
+
+msgid "status.signalingUnavailable"
+msgstr "Room signaling is unavailable. Start the Worker locally or deploy it."
+
+msgid "chat.placeholder"
+msgstr "Message"
+
+msgid "chat.send"
+msgstr "Send"
+
+msgid "controls.group"
+msgstr "Touch controls"
+
+msgid "controls.moveHandle"
+msgstr "Move movement controls"
+
+msgid "controls.fireHandle"
+msgstr "Move fire control"
+
+msgid "controls.moveUp"
+msgstr "Move up"
+
+msgid "controls.moveLeft"
+msgstr "Move left"
+
+msgid "controls.moveDown"
+msgstr "Move down"
+
+msgid "controls.moveRight"
+msgstr "Move right"
+
+msgid "controls.fire"
+msgstr "Fire"
+
+msgid "canvas.aria"
+msgstr "Tank battle arena"
