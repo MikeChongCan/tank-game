@@ -22,9 +22,10 @@ export type ServerSignalMessage =
 
 export type RtcGameMessage =
   | { type: "state"; player: Player; bullets: Bullet[] }
-  | { type: "brick-hits"; hits: string[] }
+  | { type: "brick-hits"; hits: string[]; respawnInMs: number }
+  | { type: "brick-respawns"; keys: string[] }
   | { type: "player-hit"; targetId: string; byId: string }
-  | { type: "sync"; player: Player; bullets: Bullet[]; destroyedBricks: string[] };
+  | { type: "sync"; player: Player; bullets: Bullet[]; destroyedBricks: string[]; brickRespawns: Array<[string, number]> };
 
 export interface ChatMessage {
   id: string;

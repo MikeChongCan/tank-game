@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { applyBrickHits, createArena, createPlayer, isTankBlocked, tileKey, updateBullets } from "./engine";
+import { applyBrickHits, applyBrickRespawns, createArena, createPlayer, isTankBlocked, tileKey, updateBullets } from "./engine";
 import type { Bullet } from "./types";
 
 test("createArena is deterministic per room", () => {
@@ -38,6 +38,13 @@ test("bullets destroy bricks and disappear", () => {
   expect(update.bullets).toHaveLength(0);
   expect(update.brickHits).toEqual([key]);
   expect(applyBrickHits(new Set(), update.brickHits).has(key)).toBe(true);
+});
+
+test("brick respawns remove destroyed brick keys", () => {
+  const destroyed = applyBrickHits(new Set(), ["1:1", "2:2"]);
+  const respawned = applyBrickRespawns(destroyed, ["1:1"]);
+  expect(respawned.has("1:1")).toBe(false);
+  expect(respawned.has("2:2")).toBe(true);
 });
 
 test("bullets report steel impacts and disappear", () => {

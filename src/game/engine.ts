@@ -252,3 +252,11 @@ export function applyBrickHits(destroyedBricks: Set<string>, brickHits: string[]
   }
   return next;
 }
+
+export function applyBrickRespawns(destroyedBricks: Set<string>, respawns: string[]): Set<string> {
+  const next = new Set(destroyedBricks);
+  for (const key of respawns) {
+    next.delete(key);
+  }
+  return next;
+}

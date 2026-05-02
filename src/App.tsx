@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   SHOT_COOLDOWN_MS,
   applyBrickHits,
+  applyBrickRespawns,
   createArena,
   createBullet,
   createPlayer,
@@ -22,6 +23,7 @@ import { RtcMesh } from "./net/webrtc";
 
 const EMPTY_INPUT: InputState = { up: false, down: false, left: false, right: false, shoot: false };
 const TOUCH_POSITION_STORAGE_KEY = "tank-touch-control-positions";
+const BRICK_RESPAWN_MS = 12000;
 
 type TouchControlId = "move" | "fire";
 
@@ -186,6 +188,8 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
   const remotePlayersRef = useRef(new Map<string, Player>());
   const remoteBulletsRef = useRef(new Map<string, Bullet[]>());
   const destroyedBricksRef = useRef(new Set<string>());
+  const brickRespawnsRef = useRef(new Map<string, number>());
+  const brickRespawnTimersRef = useRef(new Map<string, number>());
   const effectsRef = useRef<VisualEffect[]>([]);
   const shakeRef = useRef(0);
   const audioRef = useRef(new GameAudio());
@@ -260,6 +264,7 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
       player,
       bullets: localBulletsRef.current,
       destroyedBricks: [...destroyedBricksRef.current],
+      brickRespawns: [...brickRespawnsRef.current].map(([key, respawnAt]) => [key, Math.max(0, respawnAt - Date.now())]),
     };
     if (peerId) {
       const sent = meshRef.current?.sendTo(peerId, message) ?? false;
@@ -268,6 +273,81 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
     }
     publishGameMessage(message);
   }, [publishGameMessage]);
+
+  const clearBrickRespawnTimers = useCallback(() => {
+    for (const timer of brickRespawnTimersRef.current.values()) {
+      window.clearTimeout(timer);
+    }
+    brickRespawnTimersRef.current.clear();
+    brickRespawnsRef.current.clear();
+  }, []);
+
+  const scheduleBrickRespawn = useCallback(
+    (key: string, respawnAt: number, publish: boolean) => {
+      const existing = brickRespawnTimersRef.current.get(key);
+      if (existing) window.clearTimeout(existing);
+
+      brickRespawnsRef.current.set(key, respawnAt);
+      const delay = Math.max(0, respawnAt - Date.now());
+      const timer = window.setTimeout(() => {
+        brickRespawnTimersRef.current.delete(key);
+        brickRespawnsRef.current.delete(key);
+        if (!destroyedBricksRef.current.has(key)) return;
+
+        destroyedBricksRef.current = applyBrickRespawns(destroyedBricksRef.current, [key]);
+        const { col, row } = parseTileKey(key);
+        const x = (col + 0.5) * arena.tileSize;
+        const y = (row + 0.5) * arena.tileSize;
+        addFlash(x, y, 20, "rgba(112, 231, 255, 0.72)");
+        addBurst(x, y, "#67e8f9", 8);
+        if (publish) {
+          publishGameMessage({ type: "brick-respawns", keys: [key] });
+        }
+        refreshUi();
+      }, delay);
+      brickRespawnTimersRef.current.set(key, timer);
+    },
+    [addBurst, addFlash, arena.tileSize, publishGameMessage, refreshUi],
+  );
+
+  const applyDestroyedBricks = useCallback(
+    (keys: string[], respawnInMs: number, publishRespawn: boolean): string[] => {
+      const newHits = keys.filter((key) => !destroyedBricksRef.current.has(key));
+      if (!newHits.length) return [];
+
+      const respawnAt = Date.now() + respawnInMs;
+      destroyedBricksRef.current = applyBrickHits(destroyedBricksRef.current, newHits);
+      for (const key of newHits) {
+        const { col, row } = parseTileKey(key);
+        addBurst((col + 0.5) * arena.tileSize, (row + 0.5) * arena.tileSize, "#fb923c", 16);
+        scheduleBrickRespawn(key, respawnAt, publishRespawn);
+      }
+      return newHits;
+    },
+    [addBurst, arena.tileSize, scheduleBrickRespawn],
+  );
+
+  const applyRespawnedBricks = useCallback(
+    (keys: string[]) => {
+      const restored = keys.filter((key) => destroyedBricksRef.current.has(key));
+      if (!restored.length) return;
+
+      destroyedBricksRef.current = applyBrickRespawns(destroyedBricksRef.current, restored);
+      for (const key of restored) {
+        const timer = brickRespawnTimersRef.current.get(key);
+        if (timer) window.clearTimeout(timer);
+        brickRespawnTimersRef.current.delete(key);
+        brickRespawnsRef.current.delete(key);
+        const { col, row } = parseTileKey(key);
+        const x = (col + 0.5) * arena.tileSize;
+        const y = (row + 0.5) * arena.tileSize;
+        addFlash(x, y, 20, "rgba(112, 231, 255, 0.72)");
+        addBurst(x, y, "#67e8f9", 8);
+      }
+      refreshUi();
+    },
+    [addBurst, addFlash, arena.tileSize, refreshUi],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -293,12 +373,7 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
       }
 
       if (message.type === "brick-hits") {
-        const newHits = message.hits.filter((key) => !destroyedBricksRef.current.has(key));
-        destroyedBricksRef.current = applyBrickHits(destroyedBricksRef.current, newHits);
-        for (const key of newHits) {
-          const { col, row } = parseTileKey(key);
-          addBurst((col + 0.5) * arena.tileSize, (row + 0.5) * arena.tileSize, "#fb923c", 12);
-        }
+        const newHits = applyDestroyedBricks(message.hits, message.respawnInMs, false);
         if (newHits.length > 0) {
           audioRef.current.brick();
           vibrate([14, 22, 18]);
@@ -307,10 +382,20 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
         return;
       }
 
+      if (message.type === "brick-respawns") {
+        applyRespawnedBricks(message.keys);
+        return;
+      }
+
       if (message.type === "sync") {
         remotePlayersRef.current.set(message.player.id, { ...message.player, lastSeen: Date.now() });
         remoteBulletsRef.current.set(message.player.id, message.bullets);
         destroyedBricksRef.current = applyBrickHits(destroyedBricksRef.current, message.destroyedBricks);
+        for (const [key, respawnInMs] of message.brickRespawns) {
+          if (destroyedBricksRef.current.has(key) && !brickRespawnsRef.current.has(key)) {
+            scheduleBrickRespawn(key, Date.now() + respawnInMs, false);
+          }
+        }
         refreshUi();
         return;
       }
@@ -345,7 +430,7 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
         }
       }
     },
-    [addBurst, arena, refreshUi],
+    [addBurst, applyDestroyedBricks, applyRespawnedBricks, arena, refreshUi, scheduleBrickRespawn],
   );
 
   useEffect(() => {
@@ -408,8 +493,9 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
         meshRef.current?.close();
         audioRef.current.dispose();
         if (respawnTimerRef.current) window.clearTimeout(respawnTimerRef.current);
+        clearBrickRespawnTimers();
       };
-  }, [arena, broadcastSync, handleRtcMessage, name, room]);
+  }, [arena, broadcastSync, clearBrickRespawnTimers, handleRtcMessage, name, room]);
 
   useEffect(() => {
     const keyMap: Record<string, keyof InputState> = {
@@ -472,16 +558,14 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
         const bulletUpdate = updateBullets(localBulletsRef.current, dt, arena, destroyedBricksRef.current, remotePlayers);
         localBulletsRef.current = bulletUpdate.bullets;
         if (bulletUpdate.brickHits.length) {
-          destroyedBricksRef.current = applyBrickHits(destroyedBricksRef.current, bulletUpdate.brickHits);
-          for (const key of bulletUpdate.brickHits) {
-            const { col, row } = parseTileKey(key);
-            addBurst((col + 0.5) * arena.tileSize, (row + 0.5) * arena.tileSize, "#fb923c", 16);
+          const newHits = applyDestroyedBricks(bulletUpdate.brickHits, BRICK_RESPAWN_MS, true);
+          if (newHits.length) {
+            shakeRef.current = Math.max(shakeRef.current, 4);
+            audioRef.current.brick();
+            vibrate([12, 18, 12]);
+            const message: RtcGameMessage = { type: "brick-hits", hits: newHits, respawnInMs: BRICK_RESPAWN_MS };
+            publishGameMessage(message);
           }
-          shakeRef.current = Math.max(shakeRef.current, 4);
-          audioRef.current.brick();
-          vibrate([12, 18, 12]);
-          const message: RtcGameMessage = { type: "brick-hits", hits: bulletUpdate.brickHits };
-          publishGameMessage(message);
         }
         if (bulletUpdate.steelHits.length) {
           for (const hit of bulletUpdate.steelHits) {
@@ -569,7 +653,7 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
 
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [addBurst, addFlash, addMuzzleFlash, arena, publishGameMessage]);
+  }, [addBurst, addFlash, addMuzzleFlash, applyDestroyedBricks, arena, publishGameMessage]);
 
   const setControl = (key: keyof InputState, active: boolean) => {
     if (active) audioRef.current.unlock();

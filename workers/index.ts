@@ -25,6 +25,7 @@ const MAX_GAME_MESSAGES_PER_SECOND = 45;
 const MAX_ROOM_SIZE = 8;
 const MAX_PENDING_CLIENTS = 4;
 const MAX_SIGNAL_TARGET_BYTES = 128;
+const MAX_BRICK_RESPAWN_MS = 60_000;
 const HELLO_TIMEOUT_MS = 5000;
 
 export default {
@@ -268,7 +269,18 @@ function isRtcGameMessage(value: unknown): value is RtcGameMessage {
   }
 
   if (value.type === "brick-hits") {
-    return Array.isArray(value.hits) && value.hits.every((hit) => typeof hit === "string");
+    return (
+      Array.isArray(value.hits) &&
+      value.hits.every((hit) => typeof hit === "string") &&
+      typeof value.respawnInMs === "number" &&
+      Number.isFinite(value.respawnInMs) &&
+      value.respawnInMs > 0 &&
+      value.respawnInMs <= MAX_BRICK_RESPAWN_MS
+    );
+  }
+
+  if (value.type === "brick-respawns") {
+    return Array.isArray(value.keys) && value.keys.every((key) => typeof key === "string");
   }
 
   if (value.type === "player-hit") {
@@ -276,7 +288,22 @@ function isRtcGameMessage(value: unknown): value is RtcGameMessage {
   }
 
   if (value.type === "sync") {
-    return isRecord(value.player) && Array.isArray(value.bullets) && Array.isArray(value.destroyedBricks);
+    return (
+      isRecord(value.player) &&
+      Array.isArray(value.bullets) &&
+      Array.isArray(value.destroyedBricks) &&
+      value.destroyedBricks.every((key) => typeof key === "string") &&
+      Array.isArray(value.brickRespawns) &&
+      value.brickRespawns.every(
+        (entry) =>
+          Array.isArray(entry) &&
+          entry.length === 2 &&
+          typeof entry[0] === "string" &&
+          typeof entry[1] === "number" &&
+          Number.isFinite(entry[1]) &&
+          entry[1] >= 0,
+      )
+    );
   }
 
   return false;
