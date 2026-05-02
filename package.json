@@ -1,0 +1,30 @@
+{
+  "name": "tank-game",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bunx --bun vite",
+    "build": "bunx --bun vite build",
+    "preview": "bunx --bun vite preview --host 127.0.0.1",
+    "test": "bun test",
+    "check": "tsc --noEmit",
+    "worker:dev": "bunx wrangler dev --local",
+    "worker:dry-run": "bunx wrangler deploy --dry-run",
+    "deploy": "bun run build && bunx wrangler deploy"
+  },
+  "dependencies": {
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260502.1",
+    "@types/bun": "latest",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.10",
+    "wrangler": "^4.87.0"
+  }
+}

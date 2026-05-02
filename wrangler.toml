@@ -1,0 +1,16 @@
+name = "tank-game"
+main = "workers/index.ts"
+compatibility_date = "2026-05-02"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[durable_objects.bindings]]
+name = "TANK_ROOMS"
+class_name = "TankRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TankRoom"]

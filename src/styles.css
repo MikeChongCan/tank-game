@@ -1,0 +1,536 @@
+:root {
+  color: #edf2f7;
+  background: #101417;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #eef2f7;
+  color: #111827;
+  border-radius: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #ffffff;
+}
+
+input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(11, 15, 16, 0.72);
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 0 12px;
+  outline: none;
+}
+
+input:focus {
+  border-color: #f7c948;
+  box-shadow: 0 0 0 3px rgba(247, 201, 72, 0.18);
+}
+
+.join-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(320px, 430px) minmax(360px, 1fr);
+  min-height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 76% 42%, rgba(247, 201, 72, 0.2), transparent 24%),
+    linear-gradient(90deg, rgba(8, 12, 14, 0.95) 0%, rgba(8, 12, 14, 0.88) 34%, rgba(8, 12, 14, 0.28) 62%, rgba(8, 12, 14, 0.08) 100%),
+    url("/assets/tank-battle-hero.png") center / cover no-repeat,
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(255, 255, 255, 0.04) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(255, 255, 255, 0.04) 31px 32px);
+}
+
+.join-panel {
+  z-index: 1;
+  align-self: center;
+  width: min(100%, 430px);
+  margin: 32px;
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(12, 16, 18, 0.82);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(18px) saturate(1.12);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #f7c948;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.brand-lockup {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.brand-lockup img {
+  width: 76px;
+  height: 76px;
+  border-radius: 8px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+.join-panel h1 {
+  font-size: clamp(2.6rem, 7vw, 5.4rem);
+  line-height: 0.95;
+}
+
+.join-panel form,
+.chat-panel form {
+  display: grid;
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.join-preview {
+  position: absolute;
+  inset: 0;
+  min-height: 100%;
+  pointer-events: none;
+}
+
+.preview-tank,
+.preview-wall {
+  position: absolute;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.preview-tank {
+  width: 148px;
+  height: 148px;
+  right: 22%;
+  top: 34%;
+  background:
+    linear-gradient(90deg, #0b0f10 0 16px, transparent 16px calc(100% - 16px), #0b0f10 calc(100% - 16px)),
+    linear-gradient(#f7c948, #d69e2e);
+}
+
+.preview-tank::before {
+  content: "";
+  position: absolute;
+  left: calc(50% - 12px);
+  top: -74px;
+  width: 24px;
+  height: 100px;
+  background: #f8fafc;
+}
+
+.wall-a {
+  width: 96px;
+  height: 96px;
+  right: 12%;
+  top: 16%;
+  background: #8f4533;
+}
+
+.wall-b {
+  width: 128px;
+  height: 128px;
+  right: 42%;
+  bottom: 16%;
+  background: #707982;
+}
+
+.wall-c {
+  width: 96px;
+  height: 96px;
+  right: 8%;
+  bottom: 18%;
+  background: #8f4533;
+}
+
+.game-shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 100%;
+  background: #070b0f;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 72px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(90deg, #151922, #101d24);
+}
+
+.topbar h1 {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.topbar span {
+  color: #a8b3c1;
+  font-size: 0.86rem;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-button {
+  min-width: 74px;
+  padding: 0 12px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  max-width: min(48vw, 360px);
+  min-height: 34px;
+  padding: 0 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.play-area {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  min-height: 0;
+}
+
+.stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: #05080c;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+}
+
+.connection-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 15, 16, 0.62);
+  font-weight: 800;
+}
+
+.sidebar {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  background: #121922;
+}
+
+.panel {
+  min-width: 0;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel h2 {
+  margin-bottom: 12px;
+  color: #f7c948;
+  font-size: 0.82rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.players {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.players li {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.players span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.swatch.pending {
+  background: #64748b;
+}
+
+.chat-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.messages p {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.messages time {
+  color: #94a3b8;
+  font-size: 0.72rem;
+}
+
+.messages b {
+  overflow: hidden;
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messages span {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+  color: #f8fafc;
+}
+
+.chat-panel form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 12px;
+}
+
+.touch-controls {
+  position: absolute;
+  display: none;
+  inset: 0;
+  pointer-events: none;
+}
+
+.floating-control {
+  position: absolute;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+.float-grip {
+  width: 48px;
+  height: 18px;
+  border: 1px solid rgba(125, 231, 255, 0.44);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 34% 50%, rgba(255, 255, 255, 0.85) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.85) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 66% 50%, rgba(255, 255, 255, 0.85) 0 2px, transparent 2.5px),
+    rgba(8, 18, 25, 0.72);
+  box-shadow: 0 0 18px rgba(59, 214, 255, 0.24);
+  cursor: grab;
+}
+
+.float-grip:active {
+  cursor: grabbing;
+}
+
+.touch-controls button {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 8px;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  border-color: rgba(134, 230, 255, 0.4);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(7, 17, 22, 0.82)),
+    rgba(14, 27, 35, 0.86);
+  color: #e7fbff;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.36),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 18px rgba(65, 214, 255, 0.18);
+}
+
+.touch-controls button:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.34),
+    inset 0 0 18px rgba(87, 224, 255, 0.24);
+}
+
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(3, 56px);
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(88, 217, 255, 0.2);
+  border-radius: 18px;
+  background: rgba(5, 10, 14, 0.46);
+  box-shadow: 0 0 34px rgba(43, 209, 255, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.dpad button:nth-child(1) {
+  grid-column: 2;
+}
+
+.dpad button:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dpad button:nth-child(3) {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.dpad button:nth-child(4) {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.fire {
+  align-self: center;
+  color: #ffffff;
+  width: 76px !important;
+  height: 76px !important;
+  border-radius: 50% !important;
+  border-color: rgba(255, 210, 169, 0.56) !important;
+  background:
+    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.72), transparent 17%),
+    linear-gradient(145deg, #ff8a3d, #a71f19 70%) !important;
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.38),
+    0 0 26px rgba(255, 111, 53, 0.36) !important;
+}
+
+@media (max-width: 840px) {
+  .join-shell,
+  .play-area {
+    grid-template-columns: 1fr;
+  }
+
+  .join-panel {
+    margin: 18px;
+  }
+
+  .join-preview {
+    display: none;
+  }
+
+  .play-area {
+    grid-template-rows: minmax(420px, 62vh) auto;
+  }
+
+  .sidebar {
+    grid-template-rows: auto 320px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 0;
+  }
+
+  .touch-controls {
+    display: block;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .top-actions {
+    width: 100%;
+  }
+
+  .status-pill {
+    flex: 1;
+    max-width: none;
+  }
+
+  .chat-panel form {
+    grid-template-columns: 1fr;
+  }
+}
