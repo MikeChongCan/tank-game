@@ -86,6 +86,9 @@ msgstr "移动方向控制"
 msgid "controls.fireHandle"
 msgstr "移动开火控制"
 
+msgid "controls.joystick"
+msgstr "移动摇杆"
+
 msgid "controls.moveUp"
 msgstr "向上移动"
 

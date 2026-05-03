@@ -86,6 +86,9 @@ msgstr "Move movement controls"
 msgid "controls.fireHandle"
 msgstr "Move fire control"
 
+msgid "controls.joystick"
+msgstr "Move joystick"
+
 msgid "controls.moveUp"
 msgstr "Move up"
 

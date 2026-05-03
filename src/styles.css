@@ -387,7 +387,6 @@ canvas {
 .floating-control {
   position: absolute;
   display: grid;
-  gap: 8px;
   justify-items: center;
   transform: translate(-50%, -50%);
   pointer-events: auto;
@@ -395,87 +394,66 @@ canvas {
   user-select: none;
 }
 
-.float-grip {
-  width: 48px;
-  height: 18px;
-  border: 1px solid rgba(125, 231, 255, 0.44);
-  border-radius: 999px;
+.joystick {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
   background:
-    radial-gradient(circle at 34% 50%, rgba(255, 255, 255, 0.85) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.85) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 66% 50%, rgba(255, 255, 255, 0.85) 0 2px, transparent 2.5px),
-    rgba(8, 18, 25, 0.72);
-  box-shadow: 0 0 18px rgba(59, 214, 255, 0.24);
-  cursor: grab;
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1), transparent 36%),
+    rgba(5, 10, 14, 0.38);
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 28px rgba(65, 214, 255, 0.16);
+  backdrop-filter: blur(10px);
 }
 
-.float-grip:active {
-  cursor: grabbing;
+.joystick-ring {
+  position: absolute;
+  inset: 14px;
+  border: 2px solid rgba(134, 230, 255, 0.46);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 22px rgba(87, 224, 255, 0.12),
+    0 0 18px rgba(65, 214, 255, 0.14);
+}
+
+.joystick-thumb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58px;
+  height: 58px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.82), transparent 18%),
+    linear-gradient(145deg, rgba(110, 231, 255, 0.94), rgba(15, 78, 106, 0.94));
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.36),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 0 18px rgba(65, 214, 255, 0.22);
+}
+
+.joystick:not(.is-active) .joystick-thumb {
+  transition: transform 130ms ease;
 }
 
 .touch-controls button {
-  width: 56px;
-  height: 56px;
   padding: 0;
-  border-radius: 8px;
   pointer-events: auto;
   touch-action: none;
   user-select: none;
-  border-color: rgba(134, 230, 255, 0.4);
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(7, 17, 22, 0.82)),
-    rgba(14, 27, 35, 0.86);
-  color: #e7fbff;
-  box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.36),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 0 18px rgba(65, 214, 255, 0.18);
-}
-
-.touch-controls button:active {
-  transform: translateY(1px) scale(0.98);
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.34),
-    inset 0 0 18px rgba(87, 224, 255, 0.24);
-}
-
-.dpad {
-  display: grid;
-  grid-template-columns: repeat(3, 56px);
-  grid-template-rows: repeat(3, 56px);
-  gap: 6px;
-  padding: 10px;
-  border: 1px solid rgba(88, 217, 255, 0.2);
-  border-radius: 18px;
-  background: rgba(5, 10, 14, 0.46);
-  box-shadow: 0 0 34px rgba(43, 209, 255, 0.16);
-  backdrop-filter: blur(12px);
-}
-
-.dpad button:nth-child(1) {
-  grid-column: 2;
-}
-
-.dpad button:nth-child(2) {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.dpad button:nth-child(3) {
-  grid-column: 2;
-  grid-row: 3;
-}
-
-.dpad button:nth-child(4) {
-  grid-column: 3;
-  grid-row: 2;
 }
 
 .fire {
   align-self: center;
   color: #ffffff;
-  width: 76px !important;
-  height: 76px !important;
+  width: 82px !important;
+  height: 82px !important;
   border-radius: 50% !important;
   border-color: rgba(255, 210, 169, 0.56) !important;
   background:
@@ -484,6 +462,14 @@ canvas {
   box-shadow:
     0 14px 32px rgba(0, 0, 0, 0.38),
     0 0 26px rgba(255, 111, 53, 0.36) !important;
+}
+
+.fire.is-dragging,
+.fire:active {
+  transform: scale(0.96);
+  box-shadow:
+    0 9px 24px rgba(0, 0, 0, 0.36),
+    0 0 30px rgba(255, 111, 53, 0.46) !important;
 }
 
 @media (max-width: 840px) {

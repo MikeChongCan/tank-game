@@ -43,6 +43,9 @@ const TOUCH_BOUNDS: Record<TouchControlId, { minX: number; maxX: number; minY: n
   move: { minX: 32, maxX: 68, minY: 30, maxY: 86 },
   fire: { minX: 16, maxX: 84, minY: 16, maxY: 88 },
 };
+const MOVE_KEYS = ["up", "down", "left", "right"] as const;
+const JOYSTICK_DEAD_ZONE = 14;
+const JOYSTICK_MAX_OFFSET = 46;
 
 function vibrate(pattern: number | number[]): void {
   if ("vibrate" in navigator) {
@@ -72,6 +75,18 @@ function clampTouchPosition(id: TouchControlId, position: TouchControlPosition):
     x: Math.max(bounds.minX, Math.min(bounds.maxX, position.x)),
     y: Math.max(bounds.minY, Math.min(bounds.maxY, position.y)),
   };
+}
+
+function joystickDirection(dx: number, dy: number): Direction | null {
+  if (Math.hypot(dx, dy) < JOYSTICK_DEAD_ZONE) return null;
+  return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : dy > 0 ? "down" : "up";
+}
+
+function clampJoystickOffset(dx: number, dy: number): TouchControlPosition {
+  const distance = Math.hypot(dx, dy);
+  if (distance <= JOYSTICK_MAX_OFFSET) return { x: dx, y: dy };
+  const scale = JOYSTICK_MAX_OFFSET / distance;
+  return { x: dx * scale, y: dy * scale };
 }
 
 function localizedMessage(t: Translate, message: string): string {
@@ -664,6 +679,24 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
     inputRef.current = { ...inputRef.current, [key]: active };
   };
 
+  const setMovement = (direction: Direction | null) => {
+    const previousDirection = MOVE_KEYS.find((key) => inputRef.current[key]) ?? null;
+    if (direction) {
+      audioRef.current.unlock();
+      if (direction !== previousDirection) {
+        audioRef.current.ui();
+        vibrate(5);
+      }
+    }
+    inputRef.current = {
+      ...inputRef.current,
+      up: direction === "up",
+      down: direction === "down",
+      left: direction === "left",
+      right: direction === "right",
+    };
+  };
+
   const sendChat = (event: React.FormEvent) => {
     event.preventDefault();
     signalingRef.current?.sendChat(chatText);
@@ -713,7 +746,7 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
         <div className="stage">
           <canvas ref={canvasRef} aria-label={t("canvas.aria")} />
           {!selfId && <div className="connection-overlay">{t("status.connectingRoom")}</div>}
-          <TouchControls t={t} setControl={setControl} />
+          <TouchControls t={t} setControl={setControl} setMovement={setMovement} />
         </div>
         <aside className="sidebar">
           <section className="panel">
@@ -759,79 +792,130 @@ function TankRoomView({ t, locale, room, name, onLeave }: { t: Translate; locale
   );
 }
 
-function TouchControls({ t, setControl }: { t: Translate; setControl: (key: keyof InputState, active: boolean) => void }) {
+function TouchControls({
+  t,
+  setControl,
+  setMovement,
+}: {
+  t: Translate;
+  setControl: (key: keyof InputState, active: boolean) => void;
+  setMovement: (direction: Direction | null) => void;
+}) {
   const [positions, setPositions] = useState<TouchControlPositions>(loadTouchControlPositions);
-  const dragRef = useRef<{ id: TouchControlId; pointerId: number } | null>(null);
+  const [joystick, setJoystick] = useState({ x: 0, y: 0, active: false });
+  const [fireDragging, setFireDragging] = useState(false);
+  const joystickPointerRef = useRef<number | null>(null);
+  const fireDragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null);
 
   useEffect(() => {
     saveTouchControlPositions(positions);
   }, [positions]);
 
-  const updatePosition = (id: TouchControlId, event: React.PointerEvent<HTMLElement>) => {
+  const stagePoint = (event: React.PointerEvent<HTMLElement>): TouchControlPosition | null => {
     const stage = event.currentTarget.closest(".stage");
     const rect = stage?.getBoundingClientRect();
-    if (!rect) return;
-    const next = clampTouchPosition(id, {
+    if (!rect) return null;
+    return {
       x: ((event.clientX - rect.left) / rect.width) * 100,
       y: ((event.clientY - rect.top) / rect.height) * 100,
-    });
-    setPositions((current) => ({ ...current, [id]: next }));
+    };
   };
 
-  const bindDrag = (id: TouchControlId) => ({
+  const updateJoystick = (event: React.PointerEvent<HTMLElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const dx = event.clientX - rect.left - rect.width / 2;
+    const dy = event.clientY - rect.top - rect.height / 2;
+    const offset = clampJoystickOffset(dx, dy);
+    setJoystick({ ...offset, active: true });
+    setMovement(joystickDirection(dx, dy));
+  };
+
+  const stopJoystick = (event: React.PointerEvent<HTMLElement>) => {
+    if (joystickPointerRef.current !== event.pointerId) return;
+    joystickPointerRef.current = null;
+    setJoystick({ x: 0, y: 0, active: false });
+    setMovement(null);
+  };
+
+  const joystickHandlers = {
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
       event.preventDefault();
       event.stopPropagation();
-      dragRef.current = { id, pointerId: event.pointerId };
+      joystickPointerRef.current = event.pointerId;
       event.currentTarget.setPointerCapture(event.pointerId);
-      updatePosition(id, event);
-      vibrate(5);
+      updateJoystick(event);
     },
     onPointerMove: (event: React.PointerEvent<HTMLElement>) => {
-      if (dragRef.current?.id !== id || dragRef.current.pointerId !== event.pointerId) return;
-      updatePosition(id, event);
+      if (joystickPointerRef.current !== event.pointerId) return;
+      updateJoystick(event);
     },
-    onPointerUp: (event: React.PointerEvent<HTMLElement>) => {
-      if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
-    },
-    onPointerCancel: (event: React.PointerEvent<HTMLElement>) => {
-      if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
-    },
-  });
+    onPointerUp: stopJoystick,
+    onPointerCancel: stopJoystick,
+    onLostPointerCapture: stopJoystick,
+  };
 
-  const bind = (key: keyof InputState) => ({
+  const updateFirePosition = (event: React.PointerEvent<HTMLElement>) => {
+    const drag = fireDragRef.current;
+    const point = stagePoint(event);
+    if (!drag || !point) return;
+    const next = clampTouchPosition("fire", {
+      x: point.x + drag.offsetX,
+      y: point.y + drag.offsetY,
+    });
+    setPositions((current) => ({ ...current, fire: next }));
+  };
+
+  const fireHandlers = {
     onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => {
       event.preventDefault();
+      event.stopPropagation();
+      const point = stagePoint(event);
+      if (point) {
+        fireDragRef.current = {
+          pointerId: event.pointerId,
+          offsetX: positions.fire.x - point.x,
+          offsetY: positions.fire.y - point.y,
+        };
+      }
       event.currentTarget.setPointerCapture(event.pointerId);
-      setControl(key, true);
+      setFireDragging(true);
+      setControl("shoot", true);
     },
-    onPointerUp: () => setControl(key, false),
-    onPointerCancel: () => setControl(key, false),
-    onPointerLeave: () => setControl(key, false),
-  });
+    onPointerMove: (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (fireDragRef.current?.pointerId !== event.pointerId) return;
+      updateFirePosition(event);
+    },
+    onPointerUp: (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (fireDragRef.current?.pointerId === event.pointerId) fireDragRef.current = null;
+      setFireDragging(false);
+      setControl("shoot", false);
+    },
+    onPointerCancel: (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (fireDragRef.current?.pointerId === event.pointerId) fireDragRef.current = null;
+      setFireDragging(false);
+      setControl("shoot", false);
+    },
+    onLostPointerCapture: (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (fireDragRef.current?.pointerId === event.pointerId) fireDragRef.current = null;
+      setFireDragging(false);
+      setControl("shoot", false);
+    },
+  };
 
   return (
     <div className="touch-controls" aria-label={t("controls.group")}>
       <div className="floating-control move-control" style={{ left: `${positions.move.x}%`, top: `${positions.move.y}%` }}>
-        <div className="float-grip" {...bindDrag("move")} aria-label={t("controls.moveHandle")} role="button" tabIndex={0} />
-        <div className="dpad">
-          <button {...bind("up")} aria-label={t("controls.moveUp")}>
-            ↑
-          </button>
-          <button {...bind("left")} aria-label={t("controls.moveLeft")}>
-            ←
-          </button>
-          <button {...bind("down")} aria-label={t("controls.moveDown")}>
-            ↓
-          </button>
-          <button {...bind("right")} aria-label={t("controls.moveRight")}>
-            →
-          </button>
+        <div className={`joystick${joystick.active ? " is-active" : ""}`} {...joystickHandlers} aria-label={t("controls.joystick")} role="button" tabIndex={0}>
+          <div className="joystick-ring" aria-hidden="true" />
+          <div
+            className="joystick-thumb"
+            style={{ transform: `translate(calc(-50% + ${joystick.x}px), calc(-50% + ${joystick.y}px))` }}
+            aria-hidden="true"
+          />
         </div>
       </div>
       <div className="floating-control fire-control" style={{ left: `${positions.fire.x}%`, top: `${positions.fire.y}%` }}>
-        <div className="float-grip" {...bindDrag("fire")} aria-label={t("controls.fireHandle")} role="button" tabIndex={0} />
-        <button className="fire" {...bind("shoot")} aria-label={t("controls.fire")}>
+        <button className={`fire${fireDragging ? " is-dragging" : ""}`} {...fireHandlers} aria-label={t("controls.fire")}>
           ●
         </button>
       </div>
